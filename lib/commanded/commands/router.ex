@@ -125,6 +125,7 @@ defmodule Commanded.Commands.Router do
       @default_dispatch_timeout 5_000
       @default_lifespan Commanded.Aggregates.DefaultLifespan
       @default_metadata %{}
+      @default_assigns %{}
       @include_aggregate_version false
       @include_execution_result false
     end
@@ -287,7 +288,7 @@ defmodule Commanded.Commands.Router do
         include_aggregate_version = Keyword.get(opts, :include_aggregate_version) || @include_aggregate_version
         include_execution_result = Keyword.get(opts, :include_execution_result) || @include_execution_result
         lifespan = Keyword.get(opts, :lifespan) || unquote(lifespan) || @default_lifespan
-        assigns = Keyword.get(opts, :assigns, %{})
+        assigns = Map.merge(@default_assigns, Keyword.get(opts, :assigns, %{}))
 
         default_identity = unquote(identity)
         default_identity_prefix = unquote(identity_prefix)
