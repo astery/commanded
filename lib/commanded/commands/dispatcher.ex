@@ -64,6 +64,58 @@ defmodule Commanded.Commands.Dispatcher do
   end
 
   defp execute(
+    %Pipeline{assigns: assigns} = pipeline,
+    %Payload{
+      aggregate_module: nil,
+      timeout: timeout,
+      command: command,
+      handler_module: handler_module,
+      handler_function: handler_function,
+    } = payload)
+  do
+    task =
+      Task.Supervisor.async_nolink(
+        Commanded.Commands.TaskDispatcher,
+        handler_module,
+        handler_function,
+        [command, assigns]
+      )
+
+    task_result = Task.yield(task, timeout) || Task.shutdown(task)
+
+    result =
+      case task_result do
+        {:ok, reply} -> reply
+        {:error, reason} -> {:error, :aggregate_execution_failed, reason}
+        {:exit, reason} -> {:error, :aggregate_execution_failed, reason}
+        nil -> {:error, :aggregate_execution_timeout}
+      end
+
+    case result do
+      :ok = response ->
+        pipeline
+        |> after_dispatch(payload)
+        |> Pipeline.respond(:ok)
+
+      {:ok, _} = response ->
+        pipeline
+        |> after_dispatch(payload)
+        |> Pipeline.respond(response)
+
+      {:error, error} ->
+        pipeline
+        |> Pipeline.respond({:error, error})
+        |> after_failure(payload)
+
+      {:error, error, reason} ->
+        pipeline
+        |> Pipeline.assign(:error_reason, reason)
+        |> Pipeline.respond({:error, error})
+        |> after_failure(payload)
+    end
+  end
+
+  defp execute(
     %Pipeline{assigns: %{aggregate_uuid: aggregate_uuid}} = pipeline,
     %Payload{aggregate_module: aggregate_module, timeout: timeout} = payload)
   do

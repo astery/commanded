@@ -10,7 +10,7 @@ defmodule Commanded.Commands.RoutingCommandsTest do
 
   defmodule UnregisteredCommand, do: defstruct [aggregate_uuid: UUID.uuid4]
 
-  describe "routing to command handler" do
+  describe "routing to aggregate command handler" do
     defmodule CommandHandlerRouter do
       use Commanded.Commands.Router
 
@@ -28,6 +28,35 @@ defmodule Commanded.Commands.RoutingCommandsTest do
 
     test "should fail to dispatch command with nil identity" do
       assert {:error, :invalid_aggregate_identity} = CommandHandlerRouter.dispatch(%OpenAccount{account_number: nil, initial_balance: 1_000})
+    end
+  end
+
+  describe "routing to plain command handler" do
+    defmodule OKCommand, do: defstruct [uuid: nil]
+    defmodule ResultCommand, do: defstruct [uuid: nil]
+
+    defmodule PlainCommandHandler do
+      def handle(%OKCommand{}, _), do: :ok
+      def handle(%ResultCommand{}, context), do: {:ok, context[:result] || "result"}
+    end
+
+    defmodule PlainCommandHandlerRouter do
+      use Commanded.Commands.Router
+
+      dispatch OKCommand, to: PlainCommandHandler, aggregate: :no, identity: :uuid
+      dispatch ResultCommand, to: PlainCommandHandler, aggregate: :no, identity: :uuid
+    end
+
+    test "should dispatch command to registered handler" do
+      assert :ok = PlainCommandHandlerRouter.dispatch(%OKCommand{uuid: UUID.uuid4()})
+    end
+
+    test "should be able to return :ok tuple" do
+      assert {:ok, "result"} = PlainCommandHandlerRouter.dispatch(%ResultCommand{uuid: UUID.uuid4()})
+    end
+
+    test "should be able to access pipeline assigns for context of execution" do
+      assert {:ok, "new"} = PlainCommandHandlerRouter.dispatch(%ResultCommand{uuid: UUID.uuid4()}, assigns: %{result: "new"})
     end
   end
 
