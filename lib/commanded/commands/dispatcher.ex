@@ -23,6 +23,7 @@ defmodule Commanded.Commands.Dispatcher do
       timeout: nil,
       lifespan: nil,
       metadata: nil,
+      assigns: %{},
       middleware: [],
     ]
   end
@@ -51,13 +52,14 @@ defmodule Commanded.Commands.Dispatcher do
     end
   end
 
-  defp to_pipeline(%Payload{command: command, consistency: consistency, identity: identity, identity_prefix: identity_prefix, metadata: metadata}) do
+  defp to_pipeline(%Payload{command: command, consistency: consistency, identity: identity, identity_prefix: identity_prefix, metadata: metadata, assigns: assigns}) do
     %Pipeline{
       command: command,
       consistency: consistency,
       identity: identity,
       identity_prefix: identity_prefix,
-      metadata: metadata
+      metadata: metadata,
+      assigns: assigns,
     }
   end
 

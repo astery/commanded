@@ -198,6 +198,7 @@ defmodule Commanded.Commands.Router do
     :timeout,
     :lifespan,
     :consistency,
+    :assigns,
   ]
 
   @doc false
@@ -209,7 +210,8 @@ defmodule Commanded.Commands.Router do
     identity_prefix: identity_prefix,
     timeout: timeout,
     lifespan: lifespan,
-    consistency: consistency)
+    consistency: consistency,
+    assigns: _assigns)
   do
     quote location: :keep do
       if Enum.member?(@registered_commands, unquote(command_module)) do
@@ -285,6 +287,7 @@ defmodule Commanded.Commands.Router do
         include_aggregate_version = Keyword.get(opts, :include_aggregate_version) || @include_aggregate_version
         include_execution_result = Keyword.get(opts, :include_execution_result) || @include_execution_result
         lifespan = Keyword.get(opts, :lifespan) || unquote(lifespan) || @default_lifespan
+        assigns = Keyword.get(opts, :assigns, %{})
 
         default_identity = unquote(identity)
         default_identity_prefix = unquote(identity_prefix)
@@ -314,6 +317,7 @@ defmodule Commanded.Commands.Router do
           timeout: timeout,
           lifespan: lifespan,
           metadata: metadata,
+          assigns: assigns,
           middleware: @registered_middleware ++ @default_middleware,
         })
       end
@@ -344,6 +348,9 @@ defmodule Commanded.Commands.Router do
 
   defp parse_opts([{:to, aggregate_or_handler} | opts], result) do
     case Keyword.pop(opts, :aggregate) do
+      {:no, opts} ->
+        handler = aggregate_or_handler
+        parse_opts(opts, [function: :handle, to: handler, aggregate: nil] ++ result)
       {nil, opts} ->
         aggregate = aggregate_or_handler
         parse_opts(opts, [function: :execute, to: aggregate, aggregate: aggregate] ++ result)
