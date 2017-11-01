@@ -36,6 +36,8 @@ defmodule Commanded.Commands.RoutingCommandsTest do
     defmodule ResultCommand, do: defstruct [uuid: nil]
 
     defmodule PlainCommandHandler do
+      @behaviour Commanded.Commands.PlainHandler
+
       def handle(%OKCommand{}, _), do: :ok
       def handle(%ResultCommand{}, context), do: {:ok, context[:result] || "result"}
     end
