@@ -129,6 +129,7 @@ defmodule Commanded.Commands.Router do
         dispatch_timeout: 5_000,
         lifespan: Commanded.Aggregates.DefaultLifespan,
         metadata: %{},
+        assigns: %{},
       ]
 
       @include_aggregate_version false
@@ -210,6 +211,7 @@ defmodule Commanded.Commands.Router do
     :timeout,
     :lifespan,
     :consistency,
+    :assigns,
   ]
 
   @doc false
@@ -221,7 +223,8 @@ defmodule Commanded.Commands.Router do
     identity_prefix: identity_prefix,
     timeout: timeout,
     lifespan: lifespan,
-    consistency: consistency)
+    consistency: consistency,
+    assigns: _assigns)
   do
     quote location: :keep do
       if Enum.member?(@registered_commands, unquote(command_module)) do
@@ -320,6 +323,7 @@ defmodule Commanded.Commands.Router do
         include_aggregate_version = Keyword.get(opts, :include_aggregate_version) || @include_aggregate_version
         include_execution_result = Keyword.get(opts, :include_execution_result) || @include_execution_result
         lifespan = Keyword.get(opts, :lifespan) || unquote(lifespan) || @default[:lifespan]
+        assigns = Map.merge(@default[:assigns], Keyword.get(opts, :assigns, %{}))
 
         default_identity = unquote(identity)
         default_identity_prefix = unquote(identity_prefix)
@@ -353,6 +357,7 @@ defmodule Commanded.Commands.Router do
           lifespan: lifespan,
           metadata: metadata,
           middleware: @registered_middleware ++ @default[:middleware],
+          assigns: assigns,
         })
       end
     end

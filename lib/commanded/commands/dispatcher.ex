@@ -27,6 +27,7 @@ defmodule Commanded.Commands.Dispatcher do
       lifespan: nil,
       metadata: nil,
       middleware: [],
+      assigns: %{},
     ]
   end
 
