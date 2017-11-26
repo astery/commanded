@@ -9,6 +9,7 @@ defmodule Commanded.Middleware.ExtractAggregateIdentity do
   alias Commanded.Middleware.Pipeline
   import Pipeline
 
+  def before_dispatch(%Pipeline{identity: nil} = pipeline), do: pipeline
   def before_dispatch(%Pipeline{} = pipeline) do
     case extract_aggregate_uuid(pipeline) do
       nil ->

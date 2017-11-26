@@ -234,7 +234,7 @@ defmodule Commanded.Commands.Router do
       # sanity check the configured modules exist
       ensure_module_exists(unquote(command_module))
       ensure_module_exists(unquote(handler))
-      ensure_module_exists(unquote(aggregate))
+      is_nil(unquote(aggregate)) || ensure_module_exists(unquote(aggregate))
 
       handler_functions = unquote(handler).__info__(:functions)
       unless Keyword.get(handler_functions, unquote(function)) == 2 do
@@ -390,6 +390,9 @@ defmodule Commanded.Commands.Router do
 
   defp parse_opts([{:to, aggregate_or_handler} | opts], result) do
     case Keyword.pop(opts, :aggregate) do
+      {:no, opts} ->
+        handler = aggregate_or_handler
+        parse_opts(opts, [function: :handle, to: handler, aggregate: nil] ++ result)
       {nil, opts} ->
         aggregate = aggregate_or_handler
         parse_opts(opts, [function: :execute, to: aggregate, aggregate: aggregate] ++ result)

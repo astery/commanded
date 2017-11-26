@@ -29,6 +29,37 @@ defmodule Commanded.Commands.RoutingCommandsTest do
     end
   end
 
+  describe "routing to plain command handler" do
+    defmodule OKCommand, do: defstruct [uuid: nil]
+    defmodule ResultCommand, do: defstruct [uuid: nil]
+
+    defmodule PlainCommandHandler do
+      @behaviour Commanded.Commands.PlainHandler
+
+      def handle(%OKCommand{}, _), do: :ok
+      def handle(%ResultCommand{}, context), do: {:ok, context[:result] || "result"}
+    end
+
+    defmodule PlainCommandHandlerRouter do
+      use Commanded.Commands.Router
+
+      dispatch OKCommand, to: PlainCommandHandler, aggregate: :no, identity: :uuid
+      dispatch ResultCommand, to: PlainCommandHandler, aggregate: :no, identity: :uuid
+    end
+
+    test "should dispatch command to registered handler" do
+      assert :ok = PlainCommandHandlerRouter.dispatch(%OKCommand{uuid: UUID.uuid4()})
+    end
+
+    test "should be able to return :ok tuple" do
+      assert {:ok, "result"} = PlainCommandHandlerRouter.dispatch(%ResultCommand{uuid: UUID.uuid4()})
+    end
+
+    test "should be able to access pipeline assigns for context of execution" do
+      assert {:ok, "new"} = PlainCommandHandlerRouter.dispatch(%ResultCommand{uuid: UUID.uuid4()}, assigns: %{result: "new"})
+    end
+  end
+
   describe "routing to aggregate" do
     alias Commanded.Commands.AggregateRouter
     alias Commanded.Commands.AggregateRoot.Command
